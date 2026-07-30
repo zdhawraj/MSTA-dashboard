@@ -269,20 +269,7 @@ function renderKPI(containerId,data,prev){
       const pColor=pct>=100?'progress-green':pct>=85?'progress-yellow':'progress-red';
       pbar='<div class="progress-wrap"><div class="progress-bar '+pColor+'" style="width:'+pct+'%"></div></div>';
     }
-    // Sparkline (last 7 days)
-    let spark='';
-    const last7=metricsData.slice(-7);
-    const sparkVals=last7.map(d=>pf(d[m.key])).filter(x=>x!==null);
-    if(sparkVals.length>=2){
-      const sMin=Math.min(...sparkVals);
-      const sMax=Math.max(...sparkVals);
-      const sRange=sMax-sMin||1;
-      spark='<div class="sparkline">'+sparkVals.map((sv,i)=>{
-        const h=Math.max(4,((sv-sMin)/sRange)*20+4);
-        return '<div class="bar" style="height:'+h+'px"></div>';
-      }).join('')+'</div>';
-    }
-    return '<div class="kpi-card '+status+'"><div class="label">'+m.label+'</div><div class="value" data-target="'+v+'">'+display+'</div><div class="sub">'+subText+'</div>'+tgt+pbar+trend+spark+'</div>';
+    return '<div class="kpi-card '+status+'"><div class="label">'+m.label+'</div><div class="value" data-target="'+v+'">'+display+'</div><div class="sub">'+subText+'</div>'+tgt+pbar+trend+'</div>';
   }).join('');
   // Animate counters
   animateCounters(containerId);
