@@ -1,6 +1,11 @@
 # Ignore everything
 *
 
-# Except the dashboard
-!index.html
+# Except these files needed for GitHub Actions + Pages
 !.gitignore
+!index.html
+!dashboard_template.html
+!update-metrics.js
+!metrics_data.json
+!.github
+!.github/**
