@@ -527,6 +527,33 @@ function renderAlerts(){
 }
 
 async function loadData(){metricsData.sort((a,b)=>a.metric_date.localeCompare(b.metric_date));renderAll();}
+
+// Tab switching
+// Period dropdown switching
+var months_=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function populateSubPeriod(){
+  var period=document.getElementById('periodSelect').value;
+  var sub=document.getElementById('subPeriodSelect');
+  sub.innerHTML='';
+  if(period==='day'){
+    // Show all available dates (most recent first)
+    var dates=[...new Set(metricsData.map(d=>d.metric_date))].sort().reverse();
+    dates.forEach(d=>{var o=document.createElement('option');o.value=d;o.textContent=d;sub.appendChild(o);});
+  } else if(period==='week'){
+    var weeks=groupBy(metricsData,d=>new Date(d.metric_date).getFullYear()+'-W'+String(getWeek(d.metric_date)).padStart(2,'0'));
+    Object.keys(weeks).sort().reverse().forEach(k=>{var o=document.createElement('option');o.value=k;o.textContent=k;sub.appendChild(o);});
+  } else if(period==='month'){
+    var grp=groupBy(metricsData,d=>{var x=new Date(d.metric_date);return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0');});
+    Object.keys(grp).sort().reverse().forEach(k=>{var o=document.createElement('option');var[y,m]=k.split('-');o.value=k;o.textContent=months_[parseInt(m)-1]+' '+y;sub.appendChild(o);});
+  } else if(period==='quarter'){
+    var grp2=groupBy(metricsData,d=>{var x=new Date(d.metric_date);return x.getFullYear()+'-Q'+getQuarter(d.metric_date);});
+    Object.keys(grp2).sort().reverse().forEach(k=>{var o=document.createElement('option');o.value=k;o.textContent=k;sub.appendChild(o);});
+  } else if(period==='year'){
+    var grp3=groupBy(metricsData,d=>String(new Date(d.metric_date).getFullYear()));
+    Object.keys(grp3).sort().reverse().forEach(k=>{var o=document.createElement('option');o.value=k;o.textContent=k;sub.appendChild(o);});
+  }
+  renderSelectedPeriod();
+}
 function renderSelectedPeriod(){
   var period=document.getElementById('periodSelect').value;
   var subVal=document.getElementById('subPeriodSelect').value;
