@@ -102,15 +102,11 @@ th{color:var(--muted);font-weight:600;text-transform:uppercase;font-size:.58rem;
 </div>
 
 <div class="tabs" id="mainTabs">
-  <select id="periodSelect" title="Select Period" style="padding:6px 14px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font-size:.78rem;font-weight:600;cursor:pointer">
-    <option value="day" selected>Day</option>
-    <option value="week">Week</option>
-    <option value="month">Month</option>
-    <option value="quarter">Quarter</option>
-    <option value="year">Year</option>
-  </select>
-  <select id="subPeriodSelect" title="Select Specific Period" style="padding:6px 14px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font-size:.78rem;font-weight:600;cursor:pointer;min-width:140px">
-  </select>
+  <button class="tab-btn active" data-tab="day">Day</button>
+  <button class="tab-btn" data-tab="week">Week</button>
+  <button class="tab-btn" data-tab="month">Month</button>
+  <button class="tab-btn" data-tab="quarter">Quarter</button>
+  <button class="tab-btn" data-tab="year">Year</button>
   <div class="view-toggle">
     <span>View:</span>
     <button class="tab-btn active" id="viewCard">Flash Cards</button>
@@ -488,7 +484,6 @@ function renderAll(){
   if(latest)document.getElementById('lastUpdated').textContent='Last updated: '+latest.metric_date+' at '+(latest.fetch_time||'').split(' ').pop();
   renderDay();renderWeek();renderMonth();renderQuarter();renderYear();
   renderAlerts();
-  populateSubPeriod();
 }
 
 function renderAlerts(){
@@ -529,108 +524,14 @@ function renderAlerts(){
 async function loadData(){metricsData.sort((a,b)=>a.metric_date.localeCompare(b.metric_date));renderAll();}
 
 // Tab switching
-// Period dropdown switching
-var months_=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-function populateSubPeriod(){
-  var period=document.getElementById('periodSelect').value;
-  var sub=document.getElementById('subPeriodSelect');
-  sub.innerHTML='';
-  if(period==='day'){
-    // Show all available dates (most recent first)
-    var dates=[...new Set(metricsData.map(d=>d.metric_date))].sort().reverse();
-    dates.forEach(d=>{var o=document.createElement('option');o.value=d;o.textContent=d;sub.appendChild(o);});
-  } else if(period==='week'){
-    var weeks=groupBy(metricsData,d=>new Date(d.metric_date).getFullYear()+'-W'+String(getWeek(d.metric_date)).padStart(2,'0'));
-    Object.keys(weeks).sort().reverse().forEach(k=>{var o=document.createElement('option');o.value=k;o.textContent=k;sub.appendChild(o);});
-  } else if(period==='month'){
-    var grp=groupBy(metricsData,d=>{var x=new Date(d.metric_date);return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0');});
-    Object.keys(grp).sort().reverse().forEach(k=>{var o=document.createElement('option');var[y,m]=k.split('-');o.value=k;o.textContent=months_[parseInt(m)-1]+' '+y;sub.appendChild(o);});
-  } else if(period==='quarter'){
-    var grp2=groupBy(metricsData,d=>{var x=new Date(d.metric_date);return x.getFullYear()+'-Q'+getQuarter(d.metric_date);});
-    Object.keys(grp2).sort().reverse().forEach(k=>{var o=document.createElement('option');o.value=k;o.textContent=k;sub.appendChild(o);});
-  } else if(period==='year'){
-    var grp3=groupBy(metricsData,d=>String(new Date(d.metric_date).getFullYear()));
-    Object.keys(grp3).sort().reverse().forEach(k=>{var o=document.createElement('option');o.value=k;o.textContent=k;sub.appendChild(o);});
-  }
-  renderSelectedPeriod();
-}
-function renderSelectedPeriod(){
-  var period=document.getElementById('periodSelect').value;
-  var subVal=document.getElementById('subPeriodSelect').value;
-  if(!subVal) return;
-  // Show correct tab content
-  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
-  document.getElementById('tab-'+period).classList.add('active');
-  if(period==='day'){
-    var idx=metricsData.findIndex(d=>d.metric_date===subVal);
-    var data=metricsData[idx]||metricsData[metricsData.length-1];
-    var prev=idx>0?metricsData[idx-1]:null;
-    document.getElementById('dayLabel').textContent='Day: '+data.metric_date;
-    renderKPI('dayKpi',data,prev);
-    renderSummaryTable('daySummaryTH','daySummaryTB',data);
-    var startIdx=Math.max(0,idx-6);
-    var last7=metricsData.slice(startIdx,idx+1).reverse();
-    renderHistTable('dayHistTH','dayHistTB',last7.map(d=>({...d,_period:d.metric_date})));
-    var cData=metricsData.slice(startIdx,idx+1);
-    renderCharts('dayCharts',cData.map(d=>d.metric_date),cData,'day');
-  } else if(period==='week'){
-    var weeks=groupBy(metricsData,d=>new Date(d.metric_date).getFullYear()+'-W'+String(getWeek(d.metric_date)).padStart(2,'0'));
-    var keys=Object.keys(weeks).sort().reverse();
-    var curIdx=keys.indexOf(subVal);
-    var curAgg=aggGroup(weeks[subVal]);
-    var prevAgg=curIdx<keys.length-1?aggGroup(weeks[keys[curIdx+1]]):null;
-    document.getElementById('weekLabel').textContent='Week: '+subVal;
-    renderKPI('weekKpi',curAgg,prevAgg);
-    renderSummaryTable('weekSummaryTH','weekSummaryTB',curAgg);
-    var tableRows=keys.slice(curIdx,curIdx+12).map(k=>{var a=aggGroup(weeks[k]);a._period=k;return a;});
-    renderHistTable('weekHistTH','weekHistTB',tableRows);
-    var chartKeys=keys.slice(curIdx,curIdx+12).reverse();
-    renderCharts('weekCharts',chartKeys,chartKeys.map(k=>aggGroup(weeks[k])),'week');
-  } else if(period==='month'){
-    var grp=groupBy(metricsData,d=>{var x=new Date(d.metric_date);return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0');});
-    var keys=Object.keys(grp).sort().reverse();
-    var curIdx=keys.indexOf(subVal);
-    var curAgg=aggGroup(grp[subVal]);
-    var prevAgg=curIdx<keys.length-1?aggGroup(grp[keys[curIdx+1]]):null;
-    var[y,m]=subVal.split('-');
-    document.getElementById('monthLabel').textContent='Month: '+months_[parseInt(m)-1]+' '+y;
-    renderKPI('monthKpi',curAgg,prevAgg);
-    renderSummaryTable('monthSummaryTH','monthSummaryTB',curAgg);
-    var tableRows=keys.slice(curIdx,curIdx+12).map(k=>{var a=aggGroup(grp[k]);var[yy,mm]=k.split('-');a._period=months_[parseInt(mm)-1]+' '+yy;return a;});
-    renderHistTable('monthHistTH','monthHistTB',tableRows);
-    var chartKeys=keys.slice(curIdx,curIdx+12).reverse();
-    var chartLabels=chartKeys.map(k=>{var[yy,mm]=k.split('-');return months_[parseInt(mm)-1]+' '+yy;});
-    renderCharts('monthCharts',chartLabels,chartKeys.map(k=>aggGroup(grp[k])),'month');
-  } else if(period==='quarter'){
-    var grp=groupBy(metricsData,d=>{var x=new Date(d.metric_date);return x.getFullYear()+'-Q'+getQuarter(d.metric_date);});
-    var keys=Object.keys(grp).sort().reverse();
-    var curIdx=keys.indexOf(subVal);
-    var curAgg=aggGroup(grp[subVal]);
-    var prevAgg=curIdx<keys.length-1?aggGroup(grp[keys[curIdx+1]]):null;
-    document.getElementById('quarterLabel').textContent='Quarter: '+subVal;
-    renderKPI('quarterKpi',curAgg,prevAgg);
-    renderSummaryTable('quarterSummaryTH','quarterSummaryTB',curAgg);
-    var tableRows=keys.slice(curIdx,curIdx+8).map(k=>{var a=aggGroup(grp[k]);a._period=k;return a;});
-    renderHistTable('quarterHistTH','quarterHistTB',tableRows);
-    var chartKeys=keys.slice(curIdx,curIdx+8).reverse();
-    renderCharts('quarterCharts',chartKeys,chartKeys.map(k=>aggGroup(grp[k])),'quarter');
-  } else if(period==='year'){
-    var grp=groupBy(metricsData,d=>String(new Date(d.metric_date).getFullYear()));
-    var keys=Object.keys(grp).sort().reverse();
-    var curIdx=keys.indexOf(subVal);
-    var curAgg=aggGroup(grp[subVal]);
-    var prevAgg=curIdx<keys.length-1?aggGroup(grp[keys[curIdx+1]]):null;
-    document.getElementById('yearLabel').textContent='Year: '+subVal;
-    renderKPI('yearKpi',curAgg,prevAgg);
-    renderSummaryTable('yearSummaryTH','yearSummaryTB',curAgg);
-    var tableRows=keys.slice(curIdx,curIdx+5).map(k=>{var a=aggGroup(grp[k]);a._period=k;return a;});
-    renderHistTable('yearHistTH','yearHistTB',tableRows);
-    var chartKeys=keys.slice(curIdx,curIdx+5).reverse();
-    renderCharts('yearCharts',chartKeys,chartKeys.map(k=>aggGroup(grp[k])),'year');
-  }
-}
-document.getElementById('periodSelect').addEventListener('change',populateSubPeriod);
-document.getElementById('subPeriodSelect').addEventListener('change',renderSelectedPeriod);
+document.querySelectorAll('#mainTabs .tab-btn[data-tab]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('#mainTabs .tab-btn[data-tab]').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+  });
+});
 
 // View toggle
 function setView(view){
