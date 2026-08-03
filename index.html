@@ -102,11 +102,13 @@ th{color:var(--muted);font-weight:600;text-transform:uppercase;font-size:.58rem;
 </div>
 
 <div class="tabs" id="mainTabs">
-  <button class="tab-btn active" data-tab="day">Day</button>
-  <button class="tab-btn" data-tab="week">Week</button>
-  <button class="tab-btn" data-tab="month">Month</button>
-  <button class="tab-btn" data-tab="quarter">Quarter</button>
-  <button class="tab-btn" data-tab="year">Year</button>
+  <select id="periodSelect" title="Select Period" style="padding:6px 14px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font-size:.78rem;font-weight:600;cursor:pointer">
+    <option value="day" selected>Day</option>
+    <option value="week">Week</option>
+    <option value="month">Month</option>
+    <option value="quarter">Quarter</option>
+    <option value="year">Year</option>
+  </select>
   <div class="view-toggle">
     <span>View:</span>
     <button class="tab-btn active" id="viewCard">Flash Cards</button>
@@ -524,13 +526,10 @@ function renderAlerts(){
 async function loadData(){metricsData.sort((a,b)=>a.metric_date.localeCompare(b.metric_date));renderAll();}
 
 // Tab switching
-document.querySelectorAll('#mainTabs .tab-btn[data-tab]').forEach(btn=>{
-  btn.addEventListener('click',()=>{
-    document.querySelectorAll('#mainTabs .tab-btn[data-tab]').forEach(b=>b.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
-  });
+// Period dropdown switching
+document.getElementById('periodSelect').addEventListener('change',function(){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+this.value).classList.add('active');
 });
 
 // View toggle
